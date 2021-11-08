@@ -7,16 +7,21 @@ class Posts:
 		r = requests.get(url=API)
 		return r.json()
 
-	def _unique_merge(result1, result2):
+	def _unique_merge(cache, result1, result2):
 		if not result1:
-			return result2
+			for item in result2:
+				if item['id'] not in cache:
+					cache[item['id']] = item['id']
+					result1.append(item)
+			return cache, result1
 		if not result2:
-			return result1
+			return cache, result1
 
 		for item in result2:
-			if item not in result1:
+			if item['id'] not in cache:
+				cache[item['id']] = item['id']
 				result1.append(item)
-		return result1
+		return cache, result1
 
 	def _sort_result(result, sortBy, direction):
 		if direction == 'desc':
@@ -28,9 +33,10 @@ class Posts:
 	@classmethod
 	def make_request(cls, tags, sortBy='id', direction='asc'):
 		combined_result = []
+		cache = dict()
 		split_tags = tags.split(',')
 		for tag in split_tags:
-			combined_result=cls._unique_merge(combined_result, cls._simple_request(tag)['posts'])
+			cache, combined_result=cls._unique_merge(cache, combined_result, cls._simple_request(tag)['posts'])
 
 		combined_result=cls._sort_result(combined_result, sortBy, direction)
 
